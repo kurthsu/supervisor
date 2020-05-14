@@ -587,6 +587,7 @@ class SupervisorNamespaceRPCInterface:
                      'stderr_logfile_backups': pconfig.stderr_logfile_backups,
                      'stderr_logfile_maxbytes': pconfig.stderr_logfile_maxbytes,
                      'stderr_syslog': pconfig.stderr_syslog,
+                     'description': pconfig.description,
                     }
                 # no support for these types in xml-rpc
                 d.update((k, 'auto') for k, v in d.items() if v is Automatic)

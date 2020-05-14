@@ -920,6 +920,7 @@ class ServerOptions(Options):
         stderr_cmaxbytes = byte_size(get(section,'stderr_capture_maxbytes','0'))
         stderr_events = boolean(get(section, 'stderr_events_enabled','false'))
         serverurl = get(section, 'serverurl', None)
+        description = get(section, 'description', None)
         if serverurl and serverurl.strip().upper() == 'AUTO':
             serverurl = None
 
@@ -1033,7 +1034,8 @@ class ServerOptions(Options):
                 exitcodes=exitcodes,
                 redirect_stderr=redirect_stderr,
                 environment=environment,
-                serverurl=serverurl)
+                serverurl=serverurl,
+                description=description)
 
             programs.append(pconfig)
 
@@ -1854,7 +1856,7 @@ class ProcessConfig(Config):
         'stderr_events_enabled', 'stderr_syslog',
         'stopsignal', 'stopwaitsecs', 'stopasgroup', 'killasgroup',
         'exitcodes', 'redirect_stderr' ]
-    optional_param_names = [ 'environment', 'serverurl' ]
+    optional_param_names = [ 'environment', 'serverurl', 'description' ]
 
     def __init__(self, options, **params):
         self.options = options

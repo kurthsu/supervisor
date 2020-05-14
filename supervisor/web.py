@@ -235,28 +235,29 @@ class TailView(MeldView):
         return as_string(root.write_xhtmlstring())
 
 class StatusView(MeldView):
-    def actions_for_process(self, process):
+    def actions_for_process(self, process, search=None):
         state = process.get_state()
         processname = urllib.quote(make_namespec(process.group.config.name,
                                                  process.config.name))
+        search_str = '&amp;search=' + search if search else ''
         start = {
             'name': 'Start',
-            'href': 'index.html?processname=%s&amp;action=start' % processname,
+            'href': 'index.html?processname=%s&amp;action=start%s' % (processname, search_str),
             'target': None,
         }
         restart = {
             'name': 'Restart',
-            'href': 'index.html?processname=%s&amp;action=restart' % processname,
+            'href': 'index.html?processname=%s&amp;action=restart%s' % (processname, search_str),
             'target': None,
         }
         stop = {
             'name': 'Stop',
-            'href': 'index.html?processname=%s&amp;action=stop' % processname,
+            'href': 'index.html?processname=%s&amp;action=stop%s' % (processname, search_str),
             'target': None,
         }
         clearlog = {
             'name': 'Clear Log',
-            'href': 'index.html?processname=%s&amp;action=clearlog' % processname,
+            'href': 'index.html?processname=%s&amp;action=clearlog%s' % (processname, search_str),
             'target': None,
         }
         tailf_stdout = {
@@ -465,6 +466,7 @@ class StatusView(MeldView):
         processname = form.get('processname')
         action = form.get('action')
         message = form.get('message')
+        search = form.get('search')
 
         if action:
             if not self.callback:
@@ -476,9 +478,10 @@ class StatusView(MeldView):
                 if message is NOT_DONE_YET:
                     return NOT_DONE_YET
                 if message is not None:
-                    server_url = form['SERVER_URL']
-                    location = server_url + "/" + '?message=%s' % urllib.quote(
-                        message)
+                    if search:
+                        location = "/" + '?search=%s&message=%s' % (search, urllib.quote(message))
+                    else:
+                        location = "/" + '?message=%s' % (urllib.quote(message))
                     response['headers']['Location'] = location
 
         supervisord = self.context.supervisord
@@ -490,24 +493,33 @@ class StatusView(MeldView):
         processnames = []
         for group in supervisord.process_groups.values():
             for gprocname in group.processes.keys():
-                processnames.append((group.config.name, gprocname))
+                if search:
+                    if gprocname.startswith(search):
+                        processnames.append((group.config.name, gprocname))
+                else:
+                    processnames.append((group.config.name, gprocname))
 
         processnames.sort()
 
         data = []
         for groupname, processname in processnames:
-            actions = self.actions_for_process(
-                supervisord.process_groups[groupname].processes[processname])
+            process = supervisord.process_groups[groupname].processes[processname]
+            actions = self.actions_for_process(process, search)
             sent_name = make_namespec(groupname, processname)
             info = rpcinterface.supervisor.getProcessInfo(sent_name)
+
+            description = info['description']
+            if process.config.description:
+                description = process.config.description + ': ' + info['description']
+
             data.append({
                 'status':info['statename'],
                 'name':processname,
                 'group':groupname,
                 'actions':actions,
                 'state':info['state'],
-                'description':info['description'],
-                })
+                'description':description
+            })
 
         root = self.clone()
 
